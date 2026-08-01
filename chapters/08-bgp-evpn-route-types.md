@@ -18,22 +18,14 @@ This is the **workhorse** of EVPN. It's how VTEPs learn remote MACs and IPs.
 
 ### NLRI Format
 
-```
-┌────────────────────────────────────────────────────────────┐
-│ Route Distinguisher (8 bytes)                               │
-├────────────────────────────────────────────────────────────┤
-│ Ethernet Tag ID (4 bytes)                                   │
-├────────────────────────────────────────────────────────────┤
-│ MAC Address Length (1 byte) — always 48                     │
-├────────────────────────────────────────────────────────────┤
-│ MAC Address (6 bytes)                                       │
-├────────────────────────────────────────────────────────────┤
-│ IP Address Length (1 byte) — 0, 32, or 128                 │
-├────────────────────────────────────────────────────────────┤
-│ IP Address (0, 4, or 16 bytes)                              │
-├────────────────────────────────────────────────────────────┤
-│ MPLS Label (3 bytes) — repurposed as VNI in VXLAN           │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A["Route Distinguisher (8 bytes)"] --> B["Ethernet Tag ID (4 bytes)"]
+    B --> C["MAC Address Length (1 byte) — always 48"]
+    C --> D["MAC Address (6 bytes)"]
+    D --> E["IP Address Length (1 byte) — 0, 32, or 128"]
+    E --> F["IP Address (0, 4, or 16 bytes)"]
+    F --> G["MPLS Label (3 bytes) — repurposed as VNI in VXLAN"]
 ```
 
 ### What It Carries
@@ -101,16 +93,11 @@ Type 3 builds the **BUM replication list**. It says: *"I participate in this bro
 
 ### NLRI Format
 
-```
-┌────────────────────────────────────────────────────────────┐
-│ Route Distinguisher (8 bytes)                               │
-├────────────────────────────────────────────────────────────┤
-│ Ethernet Tag ID (4 bytes)                                   │
-├────────────────────────────────────────────────────────────┤
-│ IP Address Length (1 byte)                                  │
-├────────────────────────────────────────────────────────────┤
-│ Originating Router's IP Address (4 or 16 bytes)             │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A["Route Distinguisher (8 bytes)"] --> B["Ethernet Tag ID (4 bytes)"]
+    B --> C["IP Address Length (1 byte)"]
+    C --> D["Originating Router's IP Address (4 or 16 bytes)"]
 ```
 
 ### How It Works
@@ -169,16 +156,11 @@ Type 1 is primarily for **multi-homing** (Chapter 12). It has two sub-types:
 
 ### NLRI Format (Per-EVI)
 
-```
-┌────────────────────────────────────────────────────────────┐
-│ Route Distinguisher (8 bytes)                               │
-├────────────────────────────────────────────────────────────┤
-│ Ethernet Segment Identifier (10 bytes)                      │
-├────────────────────────────────────────────────────────────┤
-│ Ethernet Tag ID (4 bytes)                                   │
-├────────────────────────────────────────────────────────────┤
-│ MPLS Label / VNI (3 bytes)                                  │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A["Route Distinguisher (8 bytes)"] --> B["Ethernet Segment Identifier (10 bytes)"]
+    B --> C["Ethernet Tag ID (4 bytes)"]
+    C --> D["MPLS Label / VNI (3 bytes)"]
 ```
 
 **For single-homed VXLAN (most common):** Type 1 routes are still generated but with ESI = all zeros. They're mostly irrelevant.
@@ -211,20 +193,13 @@ Type 5 carries **IP prefix routes** in EVPN. It's used for:
 
 ### NLRI Format
 
-```
-┌────────────────────────────────────────────────────────────┐
-│ Route Distinguisher (8 bytes)                               │
-├────────────────────────────────────────────────────────────┤
-│ Ethernet Tag ID (4 bytes)                                   │
-├────────────────────────────────────────────────────────────┤
-│ IP Prefix Length (1 byte)                                   │
-├────────────────────────────────────────────────────────────┤
-│ IP Prefix (4 or 16 bytes)                                   │
-├────────────────────────────────────────────────────────────┤
-│ GW IP Address (4 or 16 bytes)                               │
-├────────────────────────────────────────────────────────────┤
-│ MPLS Label / VNI (3 bytes)                                  │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A["Route Distinguisher (8 bytes)"] --> B["Ethernet Tag ID (4 bytes)"]
+    B --> C["IP Prefix Length (1 byte)"]
+    C --> D["IP Prefix (4 or 16 bytes)"]
+    D --> E["GW IP Address (4 or 16 bytes)"]
+    E --> F["MPLS Label / VNI (3 bytes)"]
 ```
 
 ### Example

@@ -163,21 +163,37 @@ debug bgp l2vpn evpn updates    ← USE WITH CAUTION
 
 ACI (Application Centric Infrastructure) is Cisco's SDN solution for data centers. It uses VXLAN internally but abstracts it behind a policy model.
 
-```
-┌─────────────────────────────────────────────────┐
-│                  APIC Cluster                     │
-│         (Policy Controller, 3+ nodes)            │
-└──────────────────────┬──────────────────────────┘
-                       │ (Southbound: COOP, IS-IS)
-┌──────────────────────┴──────────────────────────┐
-│              ACI Fabric                          │
-│                                                  │
-│   [Spine-1]  [Spine-2]  [Spine-3]              │
-│       │           │           │                  │
-│   [Leaf-1]  [Leaf-2]  [Leaf-3]  [Leaf-4]      │
-│       │           │                              │
-│    Servers     Servers                           │
-└─────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph APIC["APIC Cluster (Policy Controller, 3+ nodes)"]
+        A["APIC"]
+    end
+    subgraph Fabric["ACI Fabric"]
+        S1["Spine-1"]
+        S2["Spine-2"]
+        S3["Spine-3"]
+        L1["Leaf-1"]
+        L2["Leaf-2"]
+        L3["Leaf-3"]
+        L4["Leaf-4"]
+        SV1["Servers"]
+        SV2["Servers"]
+    end
+    APIC -->|"Southbound: COOP, IS-IS"| Fabric
+    S1 --- L1
+    S1 --- L2
+    S1 --- L3
+    S1 --- L4
+    S2 --- L1
+    S2 --- L2
+    S2 --- L3
+    S2 --- L4
+    S3 --- L1
+    S3 --- L2
+    S3 --- L3
+    S3 --- L4
+    L1 --- SV1
+    L2 --- SV2
 ```
 
 ### ACI vs NX-OS: Key Differences

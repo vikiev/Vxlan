@@ -61,15 +61,15 @@ Lose 1 spine: 5 × 100G = 500G uplink → 2.4:1 oversubscription (acceptable)
 
 For redundancy, leaves are often deployed in **pairs** (vPC or EVPN multi-homing):
 
-```
-        [Spine-1]  [Spine-2]
-           │╲  ╲╱╱    │
-           │ ╲╱╲╱     │
-        [Leaf-1]──[Leaf-2]    ← Pair (vPC or EVPN MH)
-           │         │
-        ┌──┴─────────┴──┐
-        │   Server Rack  │
-        └────────────────┘
+```mermaid
+graph TD
+    S1["Spine-1"] --- L1["Leaf-1"]
+    S1 --- L2["Leaf-2"]
+    S2["Spine-2"] --- L1
+    S2 --- L2
+    L1 --- L2
+    L1 --- SR["Server Rack"]
+    L2 --- SR
 ```
 
 ## EVPN Multi-Homing (All-Active)
@@ -176,10 +176,32 @@ router bgp 65000
 
 ### Pattern 1: Single Pod (Up to 32 Leaves)
 
-```
-    [Spine-1] [Spine-2] [Spine-3] [Spine-4]
-       │  │      │  │      │  │      │  │
-    [L1][L2] [L3][L4] [L5][L6] ... [L31][L32]
+```mermaid
+graph TD
+    subgraph Spines["Spine Layer (RRs)"]
+        S1["Spine-1"]
+        S2["Spine-2"]
+        S3["Spine-3"]
+        S4["Spine-4"]
+    end
+    subgraph Leaves["Leaf Layer"]
+        L1["L1"]
+        L2["L2"]
+        L3["L3"]
+        L4["L4"]
+        L5["L5"]
+        L6["L6"]
+        L31["L31"]
+        L32["L32"]
+    end
+    S1 --- L1
+    S1 --- L2
+    S2 --- L3
+    S2 --- L4
+    S3 --- L5
+    S3 --- L6
+    S4 --- L31
+    S4 --- L32
 ```
 - 4 spines, 32 leaves
 - Spines are RRs
@@ -188,13 +210,28 @@ router bgp 65000
 
 ### Pattern 2: Multi-Pod (32-256 Leaves)
 
-```
-    ┌─── Pod 1 ───┐     ┌─── Pod 2 ───┐
-    │ [Sp][Sp]    │     │ [Sp][Sp]    │
-    │ [L][L][L]  │     │ [L][L][L]  │
-    └──────┬──────┘     └──────┬──────┘
-           │                    │
-       [Super-Spine-1]  [Super-Spine-2]
+```mermaid
+graph TD
+    subgraph Pod1["Pod 1"]
+        P1S1["Sp"]
+        P1S2["Sp"]
+        P1L1["L"]
+        P1L2["L"]
+        P1L3["L"]
+    end
+    subgraph Pod2["Pod 2"]
+        P2S1["Sp"]
+        P2S2["Sp"]
+        P2L1["L"]
+        P2L2["L"]
+        P2L3["L"]
+    end
+    SS1["Super-Spine-1"]
+    SS2["Super-Spine-2"]
+    Pod1 --- SS1
+    Pod1 --- SS2
+    Pod2 --- SS1
+    Pod2 --- SS2
 ```
 - Each pod is independent (own spines/RRs)
 - Super-spines connect pods

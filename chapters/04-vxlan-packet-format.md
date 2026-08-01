@@ -10,24 +10,16 @@ For the CCIE lab, you **will** be asked to interpret packet captures. You need t
 
 Here's the full encapsulation, outer to inner:
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ OUTER ETHERNET HEADER (14 bytes)                                      │
-├──────────────────────────────────────────────────────────────────────┤
-│ OUTER IP HEADER (20 bytes)                                            │
-├──────────────────────────────────────────────────────────────────────┤
-│ OUTER UDP HEADER (8 bytes)                                            │
-├──────────────────────────────────────────────────────────────────────┤
-│ VXLAN HEADER (8 bytes)                                                │
-├──────────────────────────────────────────────────────────────────────┤
-│ ORIGINAL (INNER) ETHERNET FRAME (variable)                            │
-│   ┌────────────────────────────────────────────────────────────┐     │
-│   │ Inner Ethernet Header (14 bytes)                            │     │
-│   │ Inner IP Header (20 bytes)                                  │     │
-│   │ Inner Transport (TCP/UDP)                                   │     │
-│   │ Inner Payload                                               │     │
-│   └────────────────────────────────────────────────────────────┘     │
-└──────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A["OUTER ETHERNET HEADER (14 bytes)"] --> B["OUTER IP HEADER (20 bytes)"]
+    B --> C["OUTER UDP HEADER (8 bytes)"]
+    C --> D["VXLAN HEADER (8 bytes)"]
+    D --> E["ORIGINAL (INNER) ETHERNET FRAME (variable)"]
+    E --> F["Inner Ethernet Header (14 bytes)"]
+    F --> G["Inner IP Header (20 bytes)"]
+    G --> H["Inner Transport (TCP/UDP)"]
+    H --> I["Inner Payload"]
 ```
 
 **Total overhead: 50 bytes** (14 + 20 + 8 + 8) added to every frame.
@@ -36,11 +28,9 @@ Here's the full encapsulation, outer to inner:
 
 ### Outer Ethernet Header (14 bytes)
 
-```
-┌─────────────────┬─────────────────┬──────────────────┐
-│ Dst MAC (6B)    │ Src MAC (6B)    │ EtherType (2B)   │
-│ Next-hop MAC    │ VTEP's MAC      │ 0x0800 (IPv4)    │
-└─────────────────┴─────────────────┴──────────────────┘
+```mermaid
+graph LR
+    A["Dst MAC (6B)\nNext-hop MAC"] --> B["Src MAC (6B)\nVTEP's MAC"] --> C["EtherType (2B)\n0x0800 (IPv4)"]
 ```
 
 - **Dst MAC**: The MAC address of the next-hop router/switch toward the remote VTEP (resolved via ARP on the underlay)
@@ -51,21 +41,15 @@ This header is **rewritten at every hop** — standard Ethernet behavior. The sp
 
 ### Outer IP Header (20 bytes)
 
-```
-┌─────┬─────┬──────────┬──────────────────────────────┐
-│ Ver │ IHL │   ToS    │      Total Length             │
-│  4  │  5  │  (DSCP)  │  (inner + 50 bytes)          │
-├─────┴─────┼──────────┼──────────┬───────────────────┤
-│ Identification       │ Flags    │ Fragment Offset   │
-├──────────────────────┼──────────┴───────────────────┤
-│ TTL                  │ Protocol: 17 (UDP)           │
-├──────────────────────┼──────────────────────────────┤
-│ Header Checksum      │                              │
-├──────────────────────┼──────────────────────────────┤
-│ Source IP            │ VTEP-A loopback (e.g. 10.0.0.1)│
-├──────────────────────┼──────────────────────────────┤
-│ Destination IP       │ VTEP-B loopback (e.g. 10.0.0.2)│
-└──────────────────────┴──────────────────────────────┘
+```mermaid
+graph TD
+    A["Ver: 4 | IHL: 5 | ToS (DSCP) | Total Length (inner + 50 bytes)"]
+    B["Identification | Flags | Fragment Offset"]
+    C["TTL | Protocol: 17 (UDP)"]
+    D["Header Checksum"]
+    E["Source IP: VTEP-A loopback (e.g. 10.0.0.1)"]
+    F["Destination IP: VTEP-B loopback (e.g. 10.0.0.2)"]
+    A --> B --> C --> D --> E --> F
 ```
 
 Critical fields:
@@ -77,14 +61,10 @@ Critical fields:
 
 ### Outer UDP Header (8 bytes)
 
-```
-┌──────────────────────┬──────────────────────┐
-│ Source Port (2B)     │ Dest Port (2B)       │
-│ Entropy / ECMP hash  │ 4789 (VXLAN)         │
-├──────────────────────┼──────────────────────┤
-│ Length (2B)          │ Checksum (2B)        │
-│ (UDP + VXLAN + inner)│ 0x0000 (usually)     │
-└──────────────────────┴──────────────────────┘
+```mermaid
+graph LR
+    A["Source Port (2B)\nEntropy / ECMP hash"] --> B["Dest Port (2B)\n4789 (VXLAN)"]
+    C["Length (2B)\n(UDP + VXLAN + inner)"] --> D["Checksum (2B)\n0x0000 (usually)"]
 ```
 
 **Source Port (the interesting one):**
@@ -105,14 +85,13 @@ Critical fields:
 
 ### VXLAN Header (8 bytes)
 
-```
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|R|R|R|R|I|R|R|R|            Reserved                           |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                VXLAN Network Identifier (VNI)       | Reserved|
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```mermaid
+graph LR
+    A["Bits 0-3: R R R R"] --> B["Bit 4: I (VNI Valid)"]
+    B --> C["Bits 5-7: R R R"]
+    C --> D["Bytes 1-3: Reserved (24 bits)"]
+    D --> E["Bytes 4-6: VNI (24 bits)"]
+    E --> F["Byte 7: Reserved"]
 ```
 
 Byte-by-byte:

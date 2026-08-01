@@ -4,25 +4,24 @@
 
 RFC 7348 defines VXLAN's architecture with a small set of components. Let's meet them all:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        VXLAN DOMAIN                              │
-│                                                                  │
-│  ┌─────────┐    ┌─────────────────────────┐    ┌─────────┐    │
-│  │  VTEP   │    │    IP TRANSPORT          │    │  VTEP   │    │
-│  │         │    │    (Underlay Network)    │    │         │    │
-│  │ ┌─────┐ │    │                          │    │ ┌─────┐ │    │
-│  │ │VNI 5│ │════╪══════════════════════════╪════│ │VNI 5│ │    │
-│  │ │VNI 7│ │    │   OSPF / IS-IS / BGP    │    │ │VNI 7│ │    │
-│  │ │VNI 9│ │    │                          │    │ │VNI 9│ │    │
-│  │ └─────┘ │    └─────────────────────────┘    │ └─────┘ │    │
-│  └────┬────┘                                    └────┬────┘    │
-│       │                                              │          │
-│  ┌────┴────┐                                    ┌────┴────┐    │
-│  │Servers/ │                                    │Servers/ │    │
-│  │  VMs    │                                    │  VMs    │    │
-│  └─────────┘                                    └─────────┘    │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph VXLANDomain["VXLAN DOMAIN"]
+        subgraph VTEP1["VTEP (Left)"]
+            V1["VNI 5\nVNI 7\nVNI 9"]
+        end
+        subgraph Transport["IP TRANSPORT (Underlay Network)\nOSPF / IS-IS / BGP"]
+            IP["IP Fabric"]
+        end
+        subgraph VTEP2["VTEP (Right)"]
+            V2["VNI 5\nVNI 7\nVNI 9"]
+        end
+        S1["Servers / VMs"]
+        S2["Servers / VMs"]
+    end
+    V1 <-->|"VXLAN Tunnels"| V2
+    VTEP1 --> S1
+    VTEP2 --> S2
 ```
 
 ## Component Deep Dive
@@ -82,15 +81,13 @@ A "tunnel" between two VTEPs is not a pre-established circuit. It's a **logical 
 
 There's no tunnel setup, no handshake, no state in the underlay. The "tunnel" exists only in the VTEPs' forwarding tables.
 
-```
-VTEP-A Forwarding Table (VNI 5):
-┌──────────────────┬──────────────────┬─────────────┐
-│ Inner Dest MAC   │ Remote VTEP IP   │ Action      │
-├──────────────────┼──────────────────┼─────────────┤
-│ 00:11:22:33:44:55│ 10.0.0.2        │ Encapsulate │
-│ 00:AA:BB:CC:DD:EE│ 10.0.0.3        │ Encapsulate │
-│ (local MACs)     │ (local ports)    │ Bridge      │
-└──────────────────┴──────────────────┴─────────────┘
+```mermaid
+graph LR
+    subgraph FWD["VTEP-A Forwarding Table (VNI 5)"]
+        M1["00:11:22:33:44:55"] -->|"Encapsulate"| T1["10.0.0.2"]
+        M2["00:AA:BB:CC:DD:EE"] -->|"Encapsulate"| T2["10.0.0.3"]
+        M3["(local MACs)"] -->|"Bridge"| T3["(local ports)"]
+    end
 ```
 
 ### 4. The Underlay (IP Transport Network)

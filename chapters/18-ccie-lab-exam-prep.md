@@ -72,18 +72,34 @@ VXLAN/EVPN is the **single largest topic** in both exams. Master it, and you've 
 
 ### Lab Topology (Typical)
 
+```mermaid
+graph TD
+    subgraph Spines["Spine Layer"]
+        S1["Spine-1"]
+        S2["Spine-2"]
+    end
+    subgraph Leaves["Leaf Layer"]
+        L1["Leaf-1"]
+        L2["Leaf-2"]
+        L3["Leaf-3"]
+    end
+    subgraph Servers["Servers"]
+        SV1["Server"]
+        SV2["Server"]
+        SV3["Server"]
+    end
+    S1 --- L1
+    S1 --- L2
+    S1 --- L3
+    S2 --- L1
+    S2 --- L2
+    S2 --- L3
+    L1 --- SV1
+    L2 --- SV2
+    L3 --- SV3
 ```
-You'll be given a topology like:
-
-        [Spine-1]  [Spine-2]
-           │  ╲╱╱    │
-           │  ╱╲╲    │
-        [Leaf-1]  [Leaf-2]  [Leaf-3]
-           │         │         │
-        [Server]  [Server]  [Server]
 
 Tasks: Configure VXLAN EVPN fabric, verify, troubleshoot.
-```
 
 ### Lab Task Categories
 

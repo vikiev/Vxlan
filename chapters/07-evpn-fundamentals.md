@@ -157,27 +157,16 @@ This means:
 
 ## EVPN in the VXLAN Stack
 
-```
-┌─────────────────────────────────────────────┐
-│          Tenant VMs / Servers                │
-├─────────────────────────────────────────────┤
-│          VTEP (EVPN PE)                      │
-│  ┌─────────────────────────────────────┐    │
-│  │  EVPN Control Plane (BGP)           │    │
-│  │  - Advertises local MAC/IP          │    │
-│  │  - Learns remote MAC/IP             │    │
-│  │  - Builds BUM peer list             │    │
-│  └─────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────┐    │
-│  │  VXLAN Data Plane                   │    │
-│  │  - Encap/Decap                      │    │
-│  │  - Forwarding per VNI MAC table     │    │
-│  └─────────────────────────────────────┘    │
-├─────────────────────────────────────────────┤
-│          IP Underlay (OSPF/IS-IS/BGP)        │
-├─────────────────────────────────────────────┤
-│          Physical Network                    │
-└─────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A["Tenant VMs / Servers"]
+    subgraph VTEP["VTEP (EVPN PE)"]
+        B["EVPN Control Plane (BGP)\n- Advertises local MAC/IP\n- Learns remote MAC/IP\n- Builds BUM peer list"]
+        C["VXLAN Data Plane\n- Encap/Decap\n- Forwarding per VNI MAC table"]
+    end
+    D["IP Underlay (OSPF/IS-IS/BGP)"]
+    E["Physical Network"]
+    A --> VTEP --> D --> E
 ```
 
 ## Route Reflectors: Scaling EVPN
@@ -186,13 +175,17 @@ In a full-mesh BGP design, N VTEPs require N×(N-1)/2 sessions. At 100 VTEPs, th
 
 **Solution: Route Reflectors (RRs)**
 
-```
-        ┌──────────┐
-        │  RR-1    │  (Spine-1 acting as RR)
-        └────┬─────┘
-       ╱     │      ╲
-     ╱       │        ╲
-[Leaf-1] [Leaf-2] [Leaf-3] ... [Leaf-100]
+```mermaid
+graph TD
+    RR["RR-1\n(Spine-1 acting as RR)"]
+    L1["Leaf-1"]
+    L2["Leaf-2"]
+    L3["Leaf-3"]
+    L100["Leaf-100"]
+    RR --- L1
+    RR --- L2
+    RR --- L3
+    RR --- L100
 ```
 
 - Each leaf peers only with the RRs (2 sessions per leaf for redundancy)

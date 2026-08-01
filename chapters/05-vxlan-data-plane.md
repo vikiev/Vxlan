@@ -29,14 +29,13 @@ VM-A (Leaf-1, VNI 100) → VM-B (Leaf-2, VNI 100)
 
 The forwarding table on Leaf-1 for VNI 100:
 
-```
-┌────────────────────┬──────────────┬─────────────────────┐
-│ MAC Address        │ Type         │ Next Hop            │
-├────────────────────┼──────────────┼─────────────────────┤
-│ 00:AA:AA:AA:AA:AA  │ Local        │ Eth1/1 (VM-A port)  │
-│ 00:BB:BB:BB:BB:BB  │ Remote       │ VTEP 10.0.0.2       │
-│ 00:CC:CC:CC:CC:CC  │ Remote       │ VTEP 10.0.0.3       │
-└────────────────────┴──────────────┴─────────────────────┘
+```mermaid
+graph LR
+    subgraph FWD["Leaf-1 Forwarding Table (VNI 100)"]
+        M1["00:AA:AA:AA:AA:AA\nLocal"] --> P1["Eth1/1 (VM-A port)"]
+        M2["00:BB:BB:BB:BB:BB\nRemote"] --> P2["VTEP 10.0.0.2"]
+        M3["00:CC:CC:CC:CC:CC\nRemote"] --> P3["VTEP 10.0.0.3"]
+    end
 ```
 
 **Key point:** Unicast forwarding is *reactive*. The VTEP must already know where the destination MAC lives. How it learns this is the **control plane's** job (Chapter 6-9).
@@ -253,48 +252,27 @@ VNI: 100
 
 ## Traffic Flow Summary
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    INGRESS VTEP                               │
-│                                                              │
-│  Frame arrives from local port                               │
-│       │                                                      │
-│       ▼                                                      │
-│  Classify → VNI (based on ingress port/VLAN)                 │
-│       │                                                      │
-│       ▼                                                      │
-│  Lookup inner Dst MAC in VNI MAC table                       │
-│       │                                                      │
-│       ├── Found (remote)? ──→ Unicast encap → remote VTEP IP │
-│       │                                                      │
-│       ├── Found (local)? ──→ Bridge locally (no VXLAN)       │
-│       │                                                      │
-│       └── Not found? ──→ BUM handling:                       │
-│              │                                               │
-│              ├── Multicast: encap to mcast group             │
-│              └── Ingress rep: replicate to all peer VTEPs    │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph Ingress["INGRESS VTEP"]
+        A["Frame arrives from local port"] --> B["Classify → VNI (based on ingress port/VLAN)"]
+        B --> C["Lookup inner Dst MAC in VNI MAC table"]
+        C --> D{"Found?"}
+        D -->|"Remote"| E["Unicast encap → remote VTEP IP"]
+        D -->|"Local"| F["Bridge locally (no VXLAN)"]
+        D -->|"Not found"| G{"BUM handling"}
+        G -->|"Multicast"| H["Encap to mcast group"]
+        G -->|"Ingress rep"| I["Replicate to all peer VTEPs"]
+    end
 
-┌─────────────────────────────────────────────────────────────┐
-│                    EGRESS VTEP                                │
-│                                                              │
-│  VXLAN packet arrives from underlay                          │
-│       │                                                      │
-│       ▼                                                      │
-│  Validate: UDP 4789? I-flag set? VNI valid?                  │
-│       │                                                      │
-│       ▼                                                      │
-│  Decapsulate → extract inner frame                           │
-│       │                                                      │
-│       ▼                                                      │
-│  Lookup inner Dst MAC in VNI MAC table                       │
-│       │                                                      │
-│       ├── Found? ──→ Forward to local port                   │
-│       └── Not found? ──→ Flood to local ports in VNI         │
-│                          (or drop, per config)               │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
+    subgraph Egress["EGRESS VTEP"]
+        J["VXLAN packet arrives from underlay"] --> K["Validate: UDP 4789? I-flag set? VNI valid?"]
+        K --> L["Decapsulate → extract inner frame"]
+        L --> M["Lookup inner Dst MAC in VNI MAC table"]
+        M --> N{"Found?"}
+        N -->|"Yes"| O["Forward to local port"]
+        N -->|"No"| P["Flood to local ports in VNI (or drop, per config)"]
+    end
 ```
 
 ## Key Takeaways

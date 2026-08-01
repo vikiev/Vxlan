@@ -37,11 +37,9 @@ In 2011-2013, four competing overlay technologies emerged:
 **RFC:** Draft (never became RFC). Championed by Microsoft for Hyper-V.
 
 **Packet format:**
-```
-┌──────────────────────────────────────────────────────┐
-│ Outer Eth │ Outer IP │ GRE Header │ Inner Frame      │
-│           │          │ (with Key) │                  │
-└──────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    A["Outer Eth"] --> B["Outer IP"] --> C["GRE Header\n(with Key)"] --> D["Inner Frame"]
 ```
 
 The GRE "Key" field (32 bits) carries a 24-bit Tenant Network Identifier (TNI) + 8-bit flow ID.
@@ -63,10 +61,9 @@ The GRE "Key" field (32 bits) carries a 24-bit Tenant Network Identifier (TNI) +
 **Draft:** Nicira (later VMware NSX). Never standardized.
 
 **Packet format:**
-```
-┌──────────────────────────────────────────────────────┐
-│ Outer Eth │ Outer IP │ STT Header (16B) │ Inner Frame│
-└──────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    A["Outer Eth"] --> B["Outer IP"] --> C["STT Header (16B)"] --> D["Inner Frame"]
 ```
 
 STT used a **TCP-like header** (but stateless — no connection tracking) to leverage existing NIC TCP offload engines (TSO, LRO).
@@ -83,24 +80,18 @@ STT used a **TCP-like header** (but stateless — no connection tracking) to lev
 **RFC:** RFC 8926 (2020). The IETF's "do it right this time" standard.
 
 **Packet format:**
-```
-┌──────────────────────────────────────────────────────────────┐
-│ Outer Eth │ Outer IP │ UDP │ Geneve Header │ TLVs │ Inner    │
-│           │          │ 6081│ (8B + TLVs)  │      │ Frame    │
-└──────────────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    A["Outer Eth"] --> B["Outer IP"] --> C["UDP\n6081"] --> D["Geneve Header\n(8B + TLVs)"] --> E["TLVs"] --> F["Inner Frame"]
 ```
 
 **Geneve header:**
-```
- 0                   1                   2                   3
- 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|Ver|  Opt Len  |O|C|    Rsvd.  |          Protocol Type        |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|        Virtual Network Identifier (VNI)       |    Reserved   |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                    Variable-Length Options (TLVs)             |
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+```mermaid
+graph TD
+    A["Ver | Opt Len | O | C | Rsvd. | Protocol Type"]
+    B["Virtual Network Identifier (VNI) | Reserved"]
+    C["Variable-Length Options (TLVs)"]
+    A --> B --> C
 ```
 
 **Key features:**

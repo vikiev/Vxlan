@@ -18,14 +18,29 @@ VXLAN fabrics must extend beyond a single site. This chapter covers how.
 
 Extend the same VXLAN segment (VNI) across multiple data centers.
 
-```
-┌──── Site A ────┐          ┌──── Site B ────┐
-│ [Spine] [Spine]│          │ [Spine] [Spine]│
-│   │       │    │          │   │       │    │
-│ [Leaf-1][Leaf-2]│◄══════►│ [Leaf-3][Leaf-4]│
-│   │              │  DCI   │              │ │
-│ VM-A (VNI 100)  │  Link   │ VM-B (VNI 100)│
-└─────────────────┘          └─────────────────┘
+```mermaid
+graph TD
+    subgraph SiteA["Site A"]
+        SA_S1["Spine"]
+        SA_S2["Spine"]
+        SA_L1["Leaf-1"]
+        SA_L2["Leaf-2"]
+        SA_VM["VM-A (VNI 100)"]
+        SA_S1 --- SA_L1
+        SA_S2 --- SA_L2
+        SA_L1 --- SA_VM
+    end
+    subgraph SiteB["Site B"]
+        SB_S1["Spine"]
+        SB_S2["Spine"]
+        SB_L3["Leaf-3"]
+        SB_L4["Leaf-4"]
+        SB_VM["VM-B (VNI 100)"]
+        SB_S1 --- SB_L3
+        SB_S2 --- SB_L4
+        SB_L4 --- SB_VM
+    end
+    SA_L2 <-->|"DCI Link"| SB_L3
 ```
 
 **VM-A and VM-B are in the same L2 segment**, despite being in different buildings.
@@ -45,14 +60,19 @@ Extend the same VXLAN segment (VNI) across multiple data centers.
 
 Each site has its own VNIs. Sites connect via L3 routing.
 
-```
-┌──── Site A ────┐          ┌──── Site B ────┐
-│ VNI 100: 10.1.1.0/24│    │ VNI 200: 10.2.1.0/24│
-│ VNI 101: 10.1.2.0/24│    │ VNI 201: 10.2.2.0/24│
-│         │         │      │         │         │
-│    [Border Leaf]  │◄════►│  [Border Leaf]  │
-│         │         │ L3   │         │         │
-└─────────────────┘ DCI  └─────────────────┘
+```mermaid
+graph TD
+    subgraph SiteA["Site A"]
+        SA_VNI["VNI 100: 10.1.1.0/24\nVNI 101: 10.1.2.0/24"]
+        SA_BL["Border Leaf"]
+        SA_VNI --> SA_BL
+    end
+    subgraph SiteB["Site B"]
+        SB_VNI["VNI 200: 10.2.1.0/24\nVNI 201: 10.2.2.0/24"]
+        SB_BL["Border Leaf"]
+        SB_VNI --> SB_BL
+    end
+    SA_BL <-->|"L3 DCI"| SB_BL
 ```
 
 **Use cases:**
@@ -83,16 +103,25 @@ This is the most common production design.
 
 Using standard EVPN with border leaves:
 
-```
-┌──── Site A ────┐     ┌──── Site B ────┐
-│                │     │                │
-│ [Spine/RR]    │     │ [Spine/RR]    │
-│   │    │      │     │   │    │      │
-│ [Leaf][Border]│◄═══►│[Border][Leaf] │
-│         │     │ DCI │  │            │
-│         │     │     │  │            │
-│    [Leaf]     │     │ [Leaf]        │
-└────────────────┘     └────────────────┘
+```mermaid
+graph TD
+    subgraph SiteA["Site A"]
+        SA_RR["Spine/RR"]
+        SA_L["Leaf"]
+        SA_B["Border"]
+        SA_L2["Leaf"]
+        SA_RR --- SA_L
+        SA_RR --- SA_B
+        SA_RR --- SA_L2
+    end
+    subgraph SiteB["Site B"]
+        SB_RR["Spine/RR"]
+        SB_B["Border"]
+        SB_L["Leaf"]
+        SB_RR --- SB_B
+        SB_RR --- SB_L
+    end
+    SA_B <-->|"DCI"| SB_B
 ```
 
 **Border Leaf responsibilities:**
@@ -122,18 +151,17 @@ router bgp 65001
 
 ACI Multi-Site uses **Multi-Site Orchestrator (MSO)** to manage fabrics across sites:
 
-```
-┌─────────────────────────┐
-│   Multi-Site Orchestrator│
-│   (MSO / NDO)           │
-└────┬──────────┬─────────┘
-     │          │
-┌────┴────┐ ┌──┴──────┐
-│ APIC-A  │ │ APIC-B  │
-│ (Site A)│ │ (Site B)│
-└────┬────┘ └────┬────┘
-     │            │
-[Fabric A]   [Fabric B]
+```mermaid
+graph TD
+    MSO["Multi-Site Orchestrator\n(MSO / NDO)"]
+    APICA["APIC-A\n(Site A)"]
+    APICB["APIC-B\n(Site B)"]
+    FA["Fabric A"]
+    FB["Fabric B"]
+    MSO --> APICA
+    MSO --> APICB
+    APICA --> FA
+    APICB --> FB
 ```
 
 **Key concepts:**

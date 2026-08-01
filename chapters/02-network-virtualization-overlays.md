@@ -4,16 +4,13 @@
 
 Every VXLAN deployment involves **two networks** operating simultaneously:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    OVERLAY NETWORK                        │
-│   (Tenant L2/L3 segments, VNIs, virtual MACs)           │
-│                                                          │
-│   ┌─────────────────────────────────────────────────┐   │
-│   │              UNDERLAY NETWORK                    │   │
-│   │   (Physical IP transport, Spine-Leaf, IGP)      │   │
-│   └─────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph Overlay["OVERLAY NETWORK (Tenant L2/L3 segments, VNIs, virtual MACs)"]
+        subgraph Underlay["UNDERLAY NETWORK (Physical IP transport, Spine-Leaf, IGP)"]
+            U["IP Transport"]
+        end
+    end
 ```
 
 **Underlay**: The physical (or virtual) IP network. Routers and switches running OSPF/IS-IS/BGP. It provides IP connectivity between endpoints. It knows nothing about tenants, VLANs, or VXLAN.
@@ -26,18 +23,16 @@ The beauty: **the underlay doesn't know the overlay exists**. A spine switch for
 
 A tunnel is a lie you tell the network. You take a packet, wrap it in another packet, and the intermediate devices only see the wrapper.
 
-```
-Original Packet:
-┌──────────────────────────────────┐
-│ Eth Header │ IP Payload │ Data  │   ← What the VM sent
-└──────────────────────────────────┘
-
-After VXLAN Encapsulation:
-┌────────────────────────────────────────────────────────────────┐
-│ Outer Eth │ Outer IP │ UDP │ VXLAN │ Original Eth │ IP │ Data │
-└────────────────────────────────────────────────────────────────┘
-  ↑                                        ↑
-  Underlay sees this                  Overlay payload (hidden)
+```mermaid
+graph TD
+    subgraph Original["Original Packet (What the VM sent)"]
+        A["Eth Header"] --> B["IP Payload"] --> C["Data"]
+    end
+    subgraph Encapsulated["After VXLAN Encapsulation"]
+        D["Outer Eth"] --> E["Outer IP"] --> F["UDP"] --> G["VXLAN"] --> H["Original Eth"] --> I["IP"] --> J["Data"]
+    end
+    D -.- K["Underlay sees this"]
+    H -.- L["Overlay payload (hidden)"]
 ```
 
 The intermediate switches/routers:
@@ -64,14 +59,40 @@ The intermediate switches/routers:
 
 Modern VXLAN deployments almost universally use a **CLOS topology** (Spine-Leaf) for the underlay:
 
-```
-    [Spine1]    [Spine2]    [Spine3]    [Spine4]
-       │╲  ╲╱╱    │╲  ╲╱╱    │╲  ╲╱╱    │
-       │ ╲╱╲╱     │ ╲╱╲╱     │ ╲╱╲╱     │
-       │ ╱╲ ╲     │ ╱╲ ╲     │ ╱╲ ╲     │
-    [Leaf1]    [Leaf2]    [Leaf3]    [Leaf4]
-       │           │           │           │
-    Servers     Servers     Servers     Servers
+```mermaid
+graph TD
+    subgraph Spines["Spine Layer"]
+        S1["Spine1"]
+        S2["Spine2"]
+        S3["Spine3"]
+        S4["Spine4"]
+    end
+    subgraph Leafs["Leaf Layer"]
+        L1["Leaf1"]
+        L2["Leaf2"]
+        L3["Leaf3"]
+        L4["Leaf4"]
+    end
+    S1 --- L1
+    S1 --- L2
+    S1 --- L3
+    S1 --- L4
+    S2 --- L1
+    S2 --- L2
+    S2 --- L3
+    S2 --- L4
+    S3 --- L1
+    S3 --- L2
+    S3 --- L3
+    S3 --- L4
+    S4 --- L1
+    S4 --- L2
+    S4 --- L3
+    S4 --- L4
+    L1 --- SV1["Servers"]
+    L2 --- SV2["Servers"]
+    L3 --- SV3["Servers"]
+    L4 --- SV4["Servers"]
 ```
 
 Why CLOS?
@@ -97,26 +118,26 @@ For CCIE DC, you'll see OSPF and eBGP underlays most often on Nexus 9000.
 
 Network virtualization isn't just VXLAN. It's a complete rethinking:
 
-```
-┌─────────────────────────────────────────────────┐
-│           VIRTUAL NETWORK SERVICES               │
-│  ┌─────────┐  ┌─────────┐  ┌──────────────┐   │
-│  │ L2 Segs │  │ Routing │  │ Firewall/LB  │   │
-│  │ (VXLAN) │  │ (VRF)   │  │ (Service     │   │
-│  │         │  │         │  │  Insertion)  │   │
-│  └─────────┘  └─────────┘  └──────────────┘   │
-├─────────────────────────────────────────────────┤
-│           CONTROL PLANE                          │
-│  ┌─────────────────────────────────────────┐   │
-│  │  EVPN / BGP / Controller (APIC, etc.)   │   │
-│  └─────────────────────────────────────────┘   │
-├─────────────────────────────────────────────────┤
-│           DATA PLANE (VXLAN Encapsulation)       │
-├─────────────────────────────────────────────────┤
-│           UNDERLAY (IP Fabric)                   │
-├─────────────────────────────────────────────────┤
-│           PHYSICAL (Cables, Optics, ASICs)       │
-└─────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph VNS["VIRTUAL NETWORK SERVICES"]
+        A["L2 Segs (VXLAN)"]
+        B["Routing (VRF)"]
+        C["Firewall/LB (Service Insertion)"]
+    end
+    subgraph CP["CONTROL PLANE"]
+        D["EVPN / BGP / Controller (APIC, etc.)"]
+    end
+    subgraph DP["DATA PLANE (VXLAN Encapsulation)"]
+        E["VXLAN Encap/Decap"]
+    end
+    subgraph UL["UNDERLAY (IP Fabric)"]
+        F["IP Routing"]
+    end
+    subgraph PHY["PHYSICAL (Cables, Optics, ASICs)"]
+        G["Hardware"]
+    end
+    VNS --> CP --> DP --> UL --> PHY
 ```
 
 Each layer is independent. You can:
@@ -136,16 +157,11 @@ The **VXLAN Tunnel Endpoint (VTEP)** is the device that sits at the boundary bet
 
 On Cisco Nexus 9000, the VTEP function is performed by the switch's ASIC (hardware VXLAN). On a hypervisor, it's the vSwitch (VMware VDS, Open vSwitch, etc.).
 
-```
-┌──────────┐         ┌──────────┐
-│   VM-A   │         │   VM-B   │
-│ 10.1.1.5 │         │ 10.1.1.6 │
-└────┬─────┘         └────┬─────┘
-     │ (Ethernet)          │ (Ethernet)
-┌────┴─────┐         ┌────┴─────┐
-│  VTEP-1  │◄═══════►│  VTEP-2  │   ← VXLAN tunnel (over IP underlay)
-│ Leaf-1   │  IP     │ Leaf-2   │
-└──────────┘ Fabric  └──────────┘
+```mermaid
+graph TD
+    VMA["VM-A\n10.1.1.5"] -->|"Ethernet"| VTEP1["VTEP-1\nLeaf-1"]
+    VMB["VM-B\n10.1.1.6"] -->|"Ethernet"| VTEP2["VTEP-2\nLeaf-2"]
+    VTEP1 <-->|"VXLAN tunnel over IP Fabric"| VTEP2
 ```
 
 VM-A sends a frame to VM-B. VTEP-1 encapsulates it. The IP fabric routes the outer packet to VTEP-2. VTEP-2 decapsulates and delivers the original frame. VM-B never knows the frame crossed an IP network.

@@ -17,12 +17,13 @@ The IEEE 802.1Q VLAN tag uses a 12-bit VLAN ID. That gives you 4094 usable VLANs
 
 Traditional Layer 2 networks use Spanning Tree Protocol (STP) to prevent loops. STP's solution to loops is elegant in its brutality: **block half your links**.
 
-```
-        [Core]
-       /      \
-     [Agg1]  [Agg2]    ← One of these uplinks is BLOCKED by STP
-      |        |
-    [Acc1]  [Acc2]
+```mermaid
+graph TD
+    Core["Core"] --> Agg1["Agg1"]
+    Core --> Agg2["Agg2"]
+    Agg1 --> Acc1["Acc1"]
+    Agg2 --> Acc2["Acc2"]
+    Agg1 -. "BLOCKED by STP" .- Core
 ```
 
 In a modern data center with CLOS/Spine-Leaf topologies, you want **every link active, every path used**. STP makes this impossible. You need a network where:

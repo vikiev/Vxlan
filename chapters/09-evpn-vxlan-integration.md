@@ -6,25 +6,23 @@ By now you understand VXLAN (encapsulation) and EVPN (control plane) separately.
 
 ## Reference Topology
 
-```
-                    ┌─────────────┐
-                    │  Spine-1    │  (Route Reflector)
-                    │  10.0.0.10  │
-                    └──┬──────┬───┘
-                       │      │
-              ┌────────┘      └────────┐
-              │                         │
-        ┌─────┴─────┐           ┌──────┴────┐
-        │  Leaf-1    │           │  Leaf-2   │
-        │  10.0.0.1  │           │  10.0.0.2 │
-        │  VTEP      │           │  VTEP     │
-        └─────┬──────┘           └─────┬─────┘
-              │                         │
-        ┌─────┴─────┐           ┌──────┴────┐
-        │  VM-A      │           │  VM-B     │
-        │ 10.1.1.5   │           │ 10.1.1.6  │
-        │ VNI 100    │           │ VNI 100   │
-        └────────────┘           └───────────┘
+```mermaid
+graph TD
+    subgraph Spine["Spine Layer"]
+        S1["Spine-1\n10.0.0.10\n(Route Reflector)"]
+    end
+    subgraph Leafs["Leaf VTEPs"]
+        L1["Leaf-1\n10.0.0.1\nVTEP"]
+        L2["Leaf-2\n10.0.0.2\nVTEP"]
+    end
+    subgraph Hosts["Hosts"]
+        VMA["VM-A\n10.1.1.5\nVNI 100"]
+        VMB["VM-B\n10.1.1.6\nVNI 100"]
+    end
+    S1 --- L1
+    S1 --- L2
+    L1 --- VMA
+    L2 --- VMB
 ```
 
 ## Step 1: Underlay Configuration

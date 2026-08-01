@@ -152,14 +152,12 @@ EVPN (Ethernet VPN, RFC 7432) was designed for MPLS networks but adapted for VXL
 
 ### EVPN Control Plane Overview
 
-```
-┌─────────┐    BGP EVPN     ┌─────────────────┐    BGP EVPN     ┌─────────┐
-│  Leaf-1 │◄──────────────►│ Route Reflector  │◄──────────────►│  Leaf-2 │
-│ (VTEP)  │  Type 2 routes │   (Spine/RR)     │  Type 2 routes │ (VTEP)  │
-└─────────┘                 └─────────────────┘                 └─────────┘
-     │                              │                                │
-     │         Type 3 routes        │         Type 3 routes          │
-     └──────────────────────────────┴────────────────────────────────┘
+```mermaid
+graph LR
+    L1["Leaf-1\n(VTEP)"] <-->|"BGP EVPN\nType 2 routes"| RR["Route Reflector\n(Spine/RR)"]
+    RR <-->|"BGP EVPN\nType 2 routes"| L2["Leaf-2\n(VTEP)"]
+    L1 <-->|"Type 3 routes"| RR
+    RR <-->|"Type 3 routes"| L2
 ```
 
 - **Type 2 (MAC/IP Advertisement):** "I have MAC 00:AA:AA:AA:AA:AA with IP 10.1.1.5 in VNI 100, reachable via my VTEP IP 10.0.0.1"
